@@ -8,6 +8,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --check assets/index-ZYbI82sx.js
+      - run: node --check assets/index-planner-6a865c66.js
       - run: node --check features/planner.mjs
       - run: node --test tests/*.test.mjs

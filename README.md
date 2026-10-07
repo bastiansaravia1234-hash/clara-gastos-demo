@@ -22,10 +22,10 @@ El repositorio original contiene los archivos compilados de la app React; no inc
 - `features/planner.css`: estilos adaptados a teléfono y escritorio.
 - `tests/planner.test.mjs`: cálculos, fechas, registros duplicados y respaldo.
 
-El bundle activo `assets/index-ZYbI82sx.js` importa el módulo y le pasa React, los datos actuales, su actualizador, el mes y el espacio seleccionados. Al recompilar la aplicación base, se debe conservar esta integración. Los bundles anteriores se conservan sin modificar.
+El bundle activo `assets/index-planner-6a865c66.js` importa el módulo y le pasa React, los datos actuales, su actualizador, el mes y el espacio seleccionados. Al recompilar la aplicación base, se debe conservar esta integración. Los bundles anteriores se conservan sin modificar.
 
 ```bash
-node --check assets/index-ZYbI82sx.js
+node --check assets/index-planner-6a865c66.js
 node --check features/planner.mjs
 node --test tests/*.test.mjs
 ```
