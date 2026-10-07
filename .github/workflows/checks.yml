@@ -1,0 +1,13 @@
+name: Clara checks
+on: [push, pull_request]
+jobs:
+  planner:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --check assets/index-ZYbI82sx.js
+      - run: node --check features/planner.mjs
+      - run: node --test tests/*.test.mjs
