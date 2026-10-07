@@ -10,4 +10,6 @@ jobs:
           node-version: 22
       - run: node --check assets/index-planner-6a865c66.js
       - run: node --check features/planner.mjs
+      - run: node --check features/finance-agent.mjs
+      - run: node --check features/finance-agent-model.mjs
       - run: node --test tests/*.test.mjs
