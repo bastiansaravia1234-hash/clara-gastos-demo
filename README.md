@@ -31,3 +31,9 @@ node --test tests/*.test.mjs
 ```
 
 Para una vista local, sirve el directorio padre y abre `/clara-gastos-demo/`; los recursos de la app utilizan esa ruta base.
+
+## Agente financiero local
+
+Se agregó un motor editable para el asistente en `features/finance-agent-model.mjs` y su interfaz en `features/finance-agent.mjs`. El agente analiza en el navegador saldo, ingresos, gastos, categorías, presupuesto, reserva, margen diario, pagos pendientes y metas. No usa claves en el frontend, no realiza transferencias y no envía datos fuera del dispositivo.
+
+El repositorio publicado conserva el bundle React compilado original; por eso estos módulos quedan listos para reemplazar de forma segura la lógica embebida del Asistente cuando se disponga del proyecto fuente. Las pruebas del motor sí corren en CI.
