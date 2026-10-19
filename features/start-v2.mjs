@@ -1,5 +1,5 @@
 import {decodeImport,validateImport,readCurrent,importSummary,persistImport,STORAGE_KEY} from './import-data.mjs?v=2';
-const launch = () => location.pathname.endsWith('/importar.html') ? location.replace('./') : import('../assets/index-rose-v2.js');
+const launch = () => location.pathname.endsWith('/importar.html') ? location.replace('./') : import('../assets/index-rose-v2.js?v=3');
 const money = value => new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0}).format(value);
 const root = document.getElementById('root');
 function element(tag, content, attrs = {}) {
