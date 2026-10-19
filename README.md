@@ -49,3 +49,7 @@ La entrada activa usa `features/start-v2.mjs` y `assets/index-rose-v2.js`. El bu
 El estilo rosado translúcido se define en `features/glass-v2.css`, con alternativa opaca, áreas seguras y reducción de movimiento. El manifiesto y los íconos permiten agregar Clara a la pantalla de inicio de iPhone. No hay conexión bancaria, sincronización entre dispositivos ni garantía de lanzamiento sin conexión.
 
 El importador admite `ownerName`, `account.bank` y `replacesImportId`: una corrección conserva la cuenta, sustituye exclusivamente los movimientos de la carga previa y guarda un respaldo antes de escribir. Conserva registros manuales posteriores. Los datos de cartolas permanecen fuera del repositorio público.
+
+## Pantalla de apertura
+
+`index.html` muestra una bienvenida de Clara antes de que termine de cargar la aplicación. `features/launch-screen-v1.js` la retira cuando React ya ha creado la pantalla principal. La primera apertura tiene una presentación breve; las siguientes usan una transición más corta. Se respeta la reducción de movimiento y hay opción de reintentar si la app no termina de cargar. Solo se guarda una marca de bienvenida, sin cambiar los registros financieros.
