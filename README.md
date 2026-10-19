@@ -31,3 +31,13 @@ node --test tests/*.test.mjs
 ```
 
 Para una vista local, sirve el directorio padre y abre `/clara-gastos-demo/`; los recursos de la app utilizan esa ruta base.
+
+## Carga privada de movimientos
+
+Los enlaces con fragmento `#importar=` permiten revisar e incorporar una carga manual antes de abrir la app. El formato JSON validado incluye `version`, un `id` estable de carga, `account` (`name`, `opening`) y `transactions` (`title`, `amount`, `kind`, `category`, `date`, `note`). Los registros personales se transportan en el fragmento privado del enlace y no se publican en este repositorio ni se envían como ruta al servidor.
+
+La pantalla muestra saldo inicial, movimientos y saldo estimado. Por defecto agrega una cuenta sin cambiar registros existentes. Si hay datos de ejemplo, ofrece reemplazarlos explícitamente y conserva un respaldo local previo bajo `clara-respaldo-importacion-<id>`. Una carga ya aplicada no se duplica aunque se haya editado después. No modifica ni sincroniza ninguna cuenta bancaria. El fragmento se retira del enlace después de cargar o cancelar.
+
+El arranque ahora pasa por `features/start.mjs`, que importa el mismo bundle existente después de la revisión. Los cálculos y cambios están en `features/import-data.mjs`.
+
+También se puede abrir `importar.html` y seleccionar un archivo JSON privado, sin incluir los datos en un enlace. El archivo se lee localmente y pasa por la misma validación y revisión.
