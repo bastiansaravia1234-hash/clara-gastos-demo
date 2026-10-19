@@ -14,3 +14,5 @@ button,input,textarea,select{font-family:inherit}button,a,input,select,textarea{
 @media(max-width:360px){.rose-tx-icon{display:none}.rose-tx-value>strong{font-size:15px}.rose-sheet .rose-form-row{grid-template-columns:1fr}.balance-card>strong{font-size:42px!important}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 @media(prefers-reduced-transparency:reduce){.panel,.stat-card,.sidebar,.topbar,.rose-day-card,.rose-sheet,.mobile-bottom-nav,.import-panel{background:#fff5fa;-webkit-backdrop-filter:none;backdrop-filter:none}}
+
+.balance-card .balance-actions button{color:#7e2e55;background:#ffffffb5;border:1px solid #ffffffc9;font-weight:650;min-height:44px}.balance-card .balance-actions button:hover{background:#fff}.balance-card .stat-label>svg{color:#a04876}.rose-delete{display:block;margin-top:20px;padding:10px 2px;min-height:44px;color:#a73250;font-size:13px;text-decoration:underline;text-underline-offset:3px}

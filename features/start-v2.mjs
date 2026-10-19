@@ -50,7 +50,7 @@ async function start(filePayload = null) {
       label.append(replace,document.createTextNode(' Empezar con estos datos y reemplazar los ejemplos. Se guarda un respaldo de lo anterior en este navegador.'));
       box.append(label);
     }
-    box.append(element('p',current?'Si conservas tus registros, se agrega una cuenta separada. Revisa que no hayas anotado estos gastos anteriormente.':'Se creará una cuenta con estos movimientos.'),element('p','Se guardan solo en este navegador. Abrir esta misma carga otra vez no duplica los movimientos.'));
+    box.append(element('p',payload.replacesImportId && current?.imports?.some(item=>item.id===payload.replacesImportId)?'Se actualizará la cuenta de la carga anterior, sin crear otra cuenta.':current?'Se agrega una cuenta separada. Revisa que no hayas anotado estos gastos anteriormente.':'Se creará una cuenta con estos movimientos.'),element('p','Se guardan solo en este navegador. Abrir esta misma carga otra vez no duplica los movimientos.'));
     const button=element('button','Cargar movimientos',{type:'button',class:'button primary'});
     button.addEventListener('click',async()=>{
       try {
