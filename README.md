@@ -41,3 +41,11 @@ La pantalla muestra saldo inicial, movimientos y saldo estimado. Por defecto agr
 El arranque ahora pasa por `features/start.mjs`, que importa el mismo bundle existente después de la revisión. Los cálculos y cambios están en `features/import-data.mjs`.
 
 También se puede abrir `importar.html` y seleccionar un archivo JSON privado, sin incluir los datos en un enlace. El archivo se lee localmente y pasa por la misma validación y revisión.
+
+## Edición y diseño para iPhone
+
+La entrada activa usa `features/start-v2.mjs` y `assets/index-rose-v2.js`. El bundle conserva el resto de la aplicación e integra `features/movements-v2.mjs`, mantenido como fuente editable junto con `features/movement-model.mjs`. La pantalla Movimientos permite editar categoría, ingreso/gasto, descripción, monto, cuenta, fecha y nota sin duplicar el registro.
+
+El estilo rosado translúcido se define en `features/glass-v2.css`, con alternativa opaca, áreas seguras y reducción de movimiento. El manifiesto y los íconos permiten agregar Clara a la pantalla de inicio de iPhone. No hay conexión bancaria, sincronización entre dispositivos ni garantía de lanzamiento sin conexión.
+
+El importador admite `ownerName`, `account.bank` y `replacesImportId`: una corrección conserva la cuenta, sustituye exclusivamente los movimientos de la carga previa y guarda un respaldo antes de escribir. Conserva registros manuales posteriores. Los datos de cartolas permanecen fuera del repositorio público.

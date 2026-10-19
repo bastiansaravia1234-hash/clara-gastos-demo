@@ -11,7 +11,9 @@ export function validateImport(input) {
     if (!text(item.title) || !text(item.category,60) || !pesos(item.amount) || item.amount === 0 || !validDate(item.date) || !['expense','income'].includes(item.kind)) throw new Error('Revisa los montos y las fechas de la carga.');
     return {title:item.title.trim(),amount:item.amount,category:item.category.trim(),date:item.date,kind:item.kind,note:typeof item.note === 'string' ? item.note.slice(0,500) : ''};
   });
-  return {version:1,id:input.id,account:{name:input.account.name.trim(),opening:input.account.opening},transactions};
+  if (input.replacesImportId !== undefined && (!validId(input.replacesImportId) || input.replacesImportId === input.id)) throw new Error('La referencia de actualización no es válida.');
+  if (input.ownerName !== undefined && !text(input.ownerName,50)) throw new Error('Revisa el nombre del perfil.');
+  return {version:1,id:input.id,account:{name:input.account.name.trim(),opening:input.account.opening,...(text(input.account.bank,80)?{bank:input.account.bank}: {})},transactions,...(input.replacesImportId?{replacesImportId:input.replacesImportId}:{}),...(input.ownerName?{ownerName:input.ownerName.trim()}: {})};
 }
 export function decodeImport(hash) {
   if (!hash.startsWith('#importar=')) return null;
@@ -34,9 +36,16 @@ export function mergeImport(current, input, replaceExamples = false) {
   if (current?.imports?.some(item=>item.id===payload.id)) return current;
   if (replaceExamples && !current?.demo) throw new Error('Solo se pueden reemplazar los datos de ejemplo.');
   const base = !current || replaceExamples ? {version:1,demo:false,profile:current?.profile||null,accounts:[],transactions:[],goals:[],activities:[]} : current;
-  const accountId = 'import-'+payload.id;
-  if (base.accounts.some(a=>a.id===accountId) || payload.transactions.some((_,i)=>base.transactions.some(t=>t.id===accountId+'-'+i))) throw new Error('Ya hay registros con el identificador de esta carga. No se ha cambiado nada.');
-  return {...base, accounts:[...base.accounts,{id:accountId,name:payload.account.name,bank:'Registro manual',type:'Cuenta vista',scope:'Personal',opening:payload.account.opening,color:'green'}],transactions:[...payload.transactions.map((t,i)=>({...t,id:accountId+'-'+i,accountId})),...base.transactions],imports:[...(base.imports||[]),{id:payload.id,count:payload.transactions.length}]};
+  const previous = payload.replacesImportId && base.imports?.find(item=>item.id===payload.replacesImportId);
+  const previousAccountId = previous?.accountId || (previous?'import-'+payload.replacesImportId:null);
+  const accountId = previousAccountId || 'import-'+payload.id;
+  const prefix = 'import-'+payload.id;
+  const priorIds = new Set(previous ? Array.from({length:previous.count},(_,i)=>'import-'+payload.replacesImportId+'-'+i) : []);
+  const existingTransactions = base.transactions.filter(t=>!priorIds.has(t.id));
+  if ((!previous && base.accounts.some(a=>a.id===accountId)) || payload.transactions.some((_,i)=>existingTransactions.some(t=>t.id===prefix+'-'+i))) throw new Error('Ya hay registros con el identificador de esta carga. No se ha cambiado nada.');
+  const account={id:accountId,name:payload.account.name,bank:payload.account.bank||'Registro manual',type:'Cuenta vista',scope:'Personal',opening:payload.account.opening,color:'pink'};
+  const accounts = previous && base.accounts.some(a=>a.id===accountId) ? base.accounts.map(a=>a.id===accountId?{...a,...account}:a) : [...base.accounts,account];
+  return {...base,profile:payload.ownerName?{...base.profile,name:payload.ownerName,email:base.profile?.email||''}:base.profile,accounts,transactions:[...payload.transactions.map((t,i)=>({...t,id:prefix+'-'+i,accountId})),...existingTransactions],imports:[...(base.imports||[]),{id:payload.id,count:payload.transactions.length,accountId}]};
 }
 export function persistImport(storage, input, replaceExamples = false, expectedRaw) {
   const raw = storage.getItem(STORAGE_KEY);
