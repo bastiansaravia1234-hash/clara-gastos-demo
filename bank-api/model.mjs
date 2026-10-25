@@ -47,6 +47,9 @@ export function normalizeSnapshot(result,bankId,now=new Date().toISOString()){
 }
 export function safeBankError(error){
  const message=String(error?.message||error||'').toLowerCase();
+ if(/rut_field_missing|password_field_missing|ambiguous_selector/.test(message))return {code:'LOGIN_FORM_CHANGED',status:'error',message:'Clara no pudo completar el formulario de acceso del banco. Necesitamos ajustar el conector; actualizar tu clave no resuelve este error.'};
+ if(/requires_action/.test(message))return {code:'REQUIRES_ACTION',status:'requires_action',message:'El banco solicita una verificación adicional. Revisa su app o web. La conexión no puede continuar automáticamente.'};
+ if(/credentials/.test(message))return {code:'CREDENTIALS',status:'requires_action',message:'No se pudo validar el acceso. Revisa la clave en la web del banco antes de volver a conectar.'};
  if(/2fa|segundo factor|clave din[aá]mica|captcha|otp|verificaci[oó]n|bci pass|coordenada/.test(message))return {code:'REQUIRES_ACTION',status:'requires_action',message:'El banco solicita una verificación adicional. Revisa su app o web. La conexión no puede continuar automáticamente.'};
  if(/credencial|incorrect|inv[aá]lid|contrase[nñ]a|clave.*(err[oó]nea|expir|bloque)|acceso.*bloque/.test(message))return {code:'CREDENTIALS',status:'requires_action',message:'No se pudo validar el acceso. Revisa la clave en la web del banco antes de volver a conectar.'};
  if(/timeout|tiempo|timed out/.test(message))return {code:'TIMEOUT',status:'error',message:'El banco no respondió a tiempo. Conservamos la última consulta válida.'};

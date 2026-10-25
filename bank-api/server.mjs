@@ -8,6 +8,7 @@ import {fileURLToPath} from 'node:url';
 import {banks,bankById,CONSENT_VERSION} from './catalog.mjs';
 import {sealCredentials,openCredentials,validMasterKey} from './crypto.mjs';
 import {normalizeRut,normalizeSnapshot,safeBankError} from './model.mjs';
+import {diagnosticReason} from './diagnostics.mjs';
 
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const publicFields='id,bank_id,label,masked_rut,status,message,error_code,product_id,account_id,snapshot,last_synced_at,last_attempt_at,next_attempt_at,created_at,updated_at';
@@ -97,7 +98,14 @@ export function createBankApi({supabaseUrl,publishableKey,masterKey,allowedOrigi
    secret=openCredentials(rows[0].ciphertext,masterKey,job.userId,job.id);
    await updateJob(job,{status:'syncing',message:'Consultando el banco. Puede tardar algunos minutos.'});
    const result=await scrapeImpl(job.bankId,secret,cancel=>{job.cancel=cancel;});secret.password='';
-   if(!result?.success)throw Error(result?.error||'BANK_UNAVAILABLE');
+   if(!result?.success){
+    // No raw errors, identifiers, credentials, screenshots, or page text in logs.
+    const stages=['LAUNCH_BROWSER','OPEN_BANK','OPEN_LOGIN','FILL_RUT','FILL_PASSWORD','SUBMIT_LOGIN','READ_PRODUCTS','OPEN_STATEMENT','READ_STATEMENT','COMPLETE'];
+    const reasons=['REQUIRES_ACTION','CREDENTIALS','RUT_FIELD_MISSING','PASSWORD_FIELD_MISSING','AMBIGUOUS_SELECTOR','TIMEOUT','BANK_NETWORK','BROWSER_CLOSED','BANK_UNAVAILABLE'];
+    const reason=reasons.includes(result?.error)?result.error:diagnosticReason(result?.error);
+    console.warn(JSON.stringify({event:'bank_consultation_failed',bank:job.bankId,stage:stages.includes(result?.stage)?result.stage:'UNKNOWN',reason}));
+    throw Error(reason);
+   }
    const snapshot=normalizeSnapshot(result,job.bankId);
    await updateJob(job,{status:'connected',message:snapshot.rejected||snapshot.foreign?'Consulta recibida. Hay datos no compatibles que no se incorporarán.':'Consulta recibida correctamente.',error_code:null,snapshot,last_synced_at:snapshot.at,next_attempt_at:new Date(Date.now()+120000).toISOString()});
   }catch(error){
