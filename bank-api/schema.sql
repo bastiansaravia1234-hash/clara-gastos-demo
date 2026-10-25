@@ -22,6 +22,7 @@ create table public.clara_bank_connections (
  updated_at timestamptz not null default now(),
  unique(id,user_id),
  unique(user_id,identity_key),
+ unique(user_id,account_id),
  check(snapshot is null or (jsonb_typeof(snapshot)='object' and octet_length(snapshot::text)<1500000))
 );
 create index clara_bank_connections_owner on public.clara_bank_connections(user_id);

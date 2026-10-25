@@ -47,7 +47,7 @@ export function createBankApi({supabaseUrl,publishableKey,masterKey,allowedOrigi
  async function db(token,table,{method='GET',query='',body}={}){
   const response=await fetchImpl(supabaseUrl+'/rest/v1/'+table+(query?'?'+query:''),{method,headers:{apikey:publishableKey,Authorization:'Bearer '+token,'Content-Type':'application/json',Prefer:'return=representation'},...(body!==undefined?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(18000)});
   const payload=await response.json().catch(()=>null);
-  if(!response.ok){if(response.status===401)fail(401,'SESSION_EXPIRED','Tu sesión venció. Vuelve a entrar a Clara.');if(payload?.code==='23505')fail(409,'ALREADY_CONNECTED','Ya tienes una conexión con este banco y RUT. Usa la conexión existente.');fail(503,'STORAGE_UNAVAILABLE','No se pudo guardar la conexión. Intenta nuevamente.');}
+  if(!response.ok){if(response.status===401)fail(401,'SESSION_EXPIRED','Tu sesión venció. Vuelve a entrar a Clara.');if(payload?.code==='23505')fail(409,'ALREADY_CONNECTED','Ya existe una conexión con este banco y RUT, o la cuenta de destino ya está vinculada a otro banco. Revisa tus conexiones.');fail(503,'STORAGE_UNAVAILABLE','No se pudo guardar la conexión. Intenta nuevamente.');}
   return payload;
  }
  async function authenticate(req){
@@ -123,7 +123,7 @@ export function createBankApi({supabaseUrl,publishableKey,masterKey,allowedOrigi
    const ctx=await authenticate(req);
    if(path==='/v1/connections'&&req.method==='GET'){
     const rows=await db(ctx.token,'clara_bank_connections',{query:'user_id=eq.'+ctx.userId+'&select='+publicFields+'&order=created_at.desc'});
-    for(const row of rows||[]){if(['queued','syncing'].includes(row.status)&&!jobs.has(row.id)&&Date.now()-Date.parse(row.updated_at)>300000){await db(ctx.token,'clara_bank_connections',{method:'PATCH',query:connectionQuery(row.id,ctx.userId),body:{status:'error',message:'La consulta se interrumpió. Puedes volver a intentarlo.',error_code:'INTERRUPTED',updated_at:iso()}});row.status='error';row.message='La consulta se interrumpió. Puedes volver a intentarlo.';}}
+    for(const row of rows||[]){if(['pending','queued','syncing'].includes(row.status)&&!jobs.has(row.id)&&Date.now()-Date.parse(row.updated_at)>300000){await db(ctx.token,'clara_bank_connections',{method:'PATCH',query:connectionQuery(row.id,ctx.userId),body:{status:'error',message:'La consulta se interrumpió. Puedes volver a intentarlo.',error_code:'INTERRUPTED',updated_at:iso()}});row.status='error';row.message='La consulta se interrumpió. Puedes volver a intentarlo.';}}
     send(200,{connections:rows});return;
    }
    if(path==='/v1/connections'&&req.method==='POST'){
@@ -136,7 +136,7 @@ export function createBankApi({supabaseUrl,publishableKey,masterKey,allowedOrigi
     try{inserted=(await db(ctx.token,'clara_bank_connections',{method:'POST',body:row}))[0];await db(ctx.token,'clara_bank_credentials',{method:'POST',body:{connection_id:id,user_id:ctx.userId,ciphertext:sealCredentials(secret,masterKey,ctx.userId,id)}});}
     catch(error){if(inserted)await db(ctx.token,'clara_bank_connections',{method:'DELETE',query:connectionQuery(id,ctx.userId)}).catch(()=>{});throw error;}
     finally{secret.password='';body.password='';}
-    const requestId=await enqueue(ctx,inserted);send(202,{id,requestId,status:'queued'});return;
+    try{const requestId=await enqueue(ctx,inserted);send(202,{id,requestId,status:'queued'});}catch(error){await db(ctx.token,'clara_bank_connections',{method:'PATCH',query:connectionQuery(id,ctx.userId),body:{status:'error',message:error instanceof ApiError?error.message:'No se pudo iniciar la consulta.',updated_at:iso()}}).catch(()=>{});throw error;}return;
    }
    const match=path.match(/^\/v1\/connections\/([^/]+)(?:\/(sync|credentials|link))?$/);
    if(!match||!UUID.test(match[1]))fail(404,'NOT_FOUND','Ruta no encontrada.');
@@ -148,6 +148,7 @@ export function createBankApi({supabaseUrl,publishableKey,masterKey,allowedOrigi
    if(req.method!=='POST')fail(405,'METHOD_NOT_ALLOWED','Método no disponible.');
    if(action==='sync'){await readBody(req);const requestId=await enqueue(ctx,row);send(202,{id,requestId,status:'queued'});return;}
    if(action==='credentials'){
+    if(Date.parse(row.next_attempt_at||'')>Date.now())fail(429,'COOLDOWN','Espera el plazo indicado antes de volver a conectar este banco.');
     if(jobs.has(id))fail(409,'ALREADY_SYNCING','Espera a que termine la consulta actual.');
     const body=await readBody(req),secret=credentials(body);
     const identity=createHmac('sha256',Buffer.from(masterKey,'base64')).update(ctx.userId+':'+row.bank_id+':'+secret.rut).digest('hex');

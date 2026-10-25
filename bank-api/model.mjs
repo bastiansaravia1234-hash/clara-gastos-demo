@@ -20,6 +20,7 @@ export function normalizeSnapshot(result,bankId,now=new Date().toISOString()){
  if(!result||result.success!==true)throw Error('CONSULTA_FALLIDA');
  const source=Array.isArray(result.accounts)?result.accounts:result.balance!==undefined?[{balance:result.balance,movements:result.movements||[]}]:[];
  if(!source.length)throw Error('SIN_CUENTAS');
+ if(source.length>1&&source.some(a=>!a.label))throw Error('CUENTAS_SIN_IDENTIFICAR');
  let rejected=0,foreign=0;
  const products=source.slice(0,12).map((account,index)=>{
   if(account.currency&&account.currency!=='CLP'){foreign++;return null;}
@@ -32,7 +33,7 @@ export function normalizeSnapshot(result,bankId,now=new Date().toISOString()){
    if(raw.source&&raw.source!=='account')continue;
    const date=bankDate(raw.date),title=text(raw.description);
    if(!date||!title||!Number.isSafeInteger(raw.amount)||raw.amount===0||Math.abs(raw.amount)>1e12){rejected++;continue;}
-   const signature=JSON.stringify([productId,date,title,raw.amount,Number.isSafeInteger(raw.balance)?raw.balance:null]);
+   const signature=JSON.stringify([productId,date,title,raw.amount]);
    const occurrence=occurrences.get(signature)||0;occurrences.set(signature,occurrence+1);
    movements.push({id:digest(signature+'#'+occurrence),date,title,amount:Math.abs(raw.amount),kind:raw.amount>0?'income':'expense',currency:'CLP'});
   }
@@ -41,6 +42,7 @@ export function normalizeSnapshot(result,bankId,now=new Date().toISOString()){
   return {id:productId,label,balance:account.balance,currency:'CLP',movements:movements.slice(0,1000),truncated:movements.length>1000};
  }).filter(Boolean);
  if(!products.length)throw Error('SIN_CUENTAS_CLP');
+ if(new Set(products.map(p=>p.id)).size!==products.length)throw Error('CUENTAS_SIN_IDENTIFICAR');
  return {version:1,bankId,at:now,products,rejected,foreign};
 }
 export function safeBankError(error){
