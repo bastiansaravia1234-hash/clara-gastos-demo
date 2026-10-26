@@ -32,7 +32,8 @@ create policy clara_bank_connections_own_insert on public.clara_bank_connections
 create policy clara_bank_connections_own_update on public.clara_bank_connections for update to authenticated using ((select auth.uid())=user_id) with check ((select auth.uid())=user_id);
 create policy clara_bank_connections_own_delete on public.clara_bank_connections for delete to authenticated using ((select auth.uid())=user_id);
 revoke all on public.clara_bank_connections from anon,public;
-grant select,insert,update,delete on public.clara_bank_connections to authenticated;
+grant select,delete on public.clara_bank_connections to authenticated;
+revoke insert,update,truncate,references,trigger on public.clara_bank_connections from authenticated;
 create table public.clara_bank_credentials (
  connection_id uuid primary key,
  user_id uuid not null references auth.users(id) on delete cascade,
@@ -47,6 +48,7 @@ create policy clara_bank_credentials_own_insert on public.clara_bank_credentials
 create policy clara_bank_credentials_own_update on public.clara_bank_credentials for update to authenticated using ((select auth.uid())=user_id) with check ((select auth.uid())=user_id);
 create policy clara_bank_credentials_own_delete on public.clara_bank_credentials for delete to authenticated using ((select auth.uid())=user_id);
 revoke all on public.clara_bank_credentials from anon,public;
-grant select,insert,update,delete on public.clara_bank_credentials to authenticated;
+-- Password-based bank access is disabled. Vault cannot be read or written by clients.
+revoke all on public.clara_bank_credentials from authenticated;
 comment on table public.clara_bank_credentials is 'AES-256-GCM ciphertext only; key lives solely in Clara Bank API runtime. Never store bank passwords, sessions, or OTPs in plaintext.';
 commit;

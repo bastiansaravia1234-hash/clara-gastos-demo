@@ -24,7 +24,7 @@ async function fixture(t,scrapeImpl=async()=>sample){
   if(method==='DELETE'){tables[table]=rows.filter(r=>!matched.includes(r));if(table==='clara_bank_connections')tables.clara_bank_credentials=tables.clara_bank_credentials.filter(r=>!matched.some(c=>c.id===r.connection_id));return Response.json(matched);}
   const select=u.searchParams.get('select');if(select&&select!=='*')matched=matched.map(row=>Object.fromEntries(select.split(',').map(key=>[key,row[key]])));return Response.json(matched);
  };
- const api=createBankApi({supabaseUrl:'https://test.supabase.co',publishableKey:'public-test',masterKey:randomBytes(32).toString('base64'),allowedOrigins:['https://clara.example'],fetchImpl,scrapeImpl});
+ const api=createBankApi({supabaseUrl:'https://test.supabase.co',publishableKey:'public-test',masterKey:randomBytes(32).toString('base64'),allowedOrigins:['https://clara.example'],fetchImpl,scrapeImpl,passwordAccessEnabled:true});
  const server=http.createServer(api.handler);await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  const request=async(method,path,{token='token-a',body,origin='https://clara.example'}={})=>{const r=await fetch('http://127.0.0.1:'+server.address().port+path,{method,headers:{...(token?{Authorization:'Bearer '+token}:{}),Origin:origin,...(body!==undefined?{'Content-Type':'application/json'}:{})},...(body!==undefined?{body:JSON.stringify(body)}:{})});return {status:r.status,data:await r.json().catch(()=>null),headers:r.headers};};
  t.after(async()=>{await api.shutdown();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));});

@@ -1,3 +1,9 @@
+# Estado actual: acceso bancario con clave desactivado
+
+La API rechaza los POST antes de leer credenciales. No se habilita por variables de entorno. El vault está sin permisos para authenticated/anon. La interfaz no solicita claves y las consultas al banco no se ejecutan. La eliminación de una conexión por su titular conserva los registros financieros e incluye el borrado en cascada del ciphertext.
+
+La conexión automática requiere una futura integración autorizada y verificación independiente. El código anterior se conserva como historial de la beta y no indica compatibilidad en producción.
+
 # Clara Bank API
 
 Read-only bank connector for signed-in Clara users. Each connection is owned by its Supabase user ID. The service validates the current JWT against Supabase Auth, applies the caller's RLS context to every database request, and never uses a service-role key.

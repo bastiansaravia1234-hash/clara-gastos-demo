@@ -41,7 +41,7 @@ export function scrapeInChild(bankId,credentials,registerCancel=()=>{}){
  });
 }
 
-export function createBankApi({supabaseUrl,publishableKey,masterKey,allowedOrigins=[],fetchImpl=fetch,scrapeImpl=scrapeInChild}){
+export function createBankApi({supabaseUrl,publishableKey,masterKey,allowedOrigins=[],fetchImpl=fetch,scrapeImpl=scrapeInChild,passwordAccessEnabled=false}){
  if(!/^https:\/\/[a-z0-9]+\.supabase\.co$/.test(supabaseUrl||'')||!publishableKey||!validMasterKey(masterKey))throw Error('BANK_API_CONFIGURATION_REQUIRED');
  const queue=[],jobs=new Map(),attempts=new Map();let running=null,shuttingDown=false;
  const connectionQuery=(id,userId)=>'id=eq.'+id+'&user_id=eq.'+userId;
@@ -75,6 +75,7 @@ export function createBankApi({supabaseUrl,publishableKey,masterKey,allowedOrigi
   if(list.length>=12)fail(429,'ATTEMPT_LIMIT','Alcanzaste el límite de consultas de esta hora. Espera antes de volver a intentar.');list.push(now);
  }
  async function enqueue(ctx,row){
+  if(!passwordAccessEnabled)fail(503,'BANK_ACCESS_PAUSED','El acceso con clave bancaria está desactivado. Usa registro manual o importa una cartola.');
   if(shuttingDown)fail(503,'RESTARTING','El servicio se está reiniciando. Intenta en unos minutos.');
   if(jobs.has(row.id))fail(409,'ALREADY_SYNCING','Esta conexión ya tiene una consulta en curso.');
   if(Date.parse(row.next_attempt_at||'')>Date.now())fail(429,'COOLDOWN','Espera el plazo indicado antes de volver a consultar este banco.');
@@ -127,7 +128,8 @@ export function createBankApi({supabaseUrl,publishableKey,masterKey,allowedOrigi
    if(origin)res.setHeader('Access-Control-Allow-Origin',origin);
    if(req.method==='OPTIONS'){res.setHeader('Access-Control-Allow-Methods','GET, POST, DELETE, OPTIONS');res.setHeader('Access-Control-Allow-Headers','Authorization, Content-Type');res.writeHead(204);res.end();return;}
    const url=new URL(req.url,'http://clara.internal'),path=url.pathname.replace(/\/$/,'')||'/';
-   if(req.method==='GET'&&['/','/health','/healthz'].includes(path)){send(200,{status:'ok',service:'clara-bank-api',version:'1.0.0',readOnly:true,banks});return;}
+   if(req.method==='GET'&&['/','/health','/healthz'].includes(path)){send(200,{status:'ok',service:'clara-bank-api',version:'1.0.0',readOnly:true,bankLoginEnabled:passwordAccessEnabled,banks:banks.map(bank=>({...bank,status:passwordAccessEnabled?'beta':'paused'}))});return;}
+   if(req.method==='POST'&&!passwordAccessEnabled)fail(503,'BANK_ACCESS_PAUSED','El acceso con clave bancaria está desactivado. Clara no iniciará sesión en tu banco. Usa registro manual o importa una cartola.');
    const ctx=await authenticate(req);
    if(path==='/v1/connections'&&req.method==='GET'){
     const rows=await db(ctx.token,'clara_bank_connections',{query:'user_id=eq.'+ctx.userId+'&select='+publicFields+'&order=created_at.desc'});
